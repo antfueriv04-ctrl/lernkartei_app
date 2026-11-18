@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<meta name="theme-color" content="#1C1B17">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Lernkartei — Diccionario de alemán</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --wood-dark:#1C1B17;
+    --wood-mid:#28241E;
+    --wood-panel:#332C22;
+    --wood-line:#463D2F;
+    --paper:#ECE1C8;
+    --paper-dim:#DED0AE;
+    --ink:#2A2318;
+    --ink-soft:#5C5140;
+    --brass:#B4874A;
+    --brass-bright:#E0B876;
+    --teal:#6FA08D;
+    --teal-deep:#3E5C50;
+    --rust:#BE6A4E;
+    --rust-deep:#7A4433;
+    --cream-text:#EDE6D6;
+    --cream-dim:#A69C89;
+    --font-display:'Fraunces', Georgia, 'Times New Roman', serif;
+    --font-body:'IBM Plex Sans', -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --font-mono:'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+    --radius:10px;
+    --shadow-card: 0 10px 30px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.25);
+  }
+
+  *,*::before,*::after{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse at top, #24211B 0%, var(--wood-dark) 55%);
+    color:var(--cream-text);
+    font-family:var(--font-body);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  button{ font-family:inherit; cursor:pointer; }
+  h1,h2,h3{ font-family:var(--font-display); margin:0; }
+
+  .app{
+    max-width:920px;
+    margin:0 auto;
+    padding:22px 18px 60px;
+  }
+
+  /* ---------- Header ---------- */
+  .topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:16px;
+    flex-wrap:wrap;
+    border-bottom:1px solid var(--wood-line);
+    padding-bottom:14px;
+    margin-bottom:18px;
+  }
+  .brand h1{
+    font-size:28px;
+    font-weight:600;
+    letter-spacing:.3px;
+    color:var(--brass-bright);
+  }
+  .brand .tagline{
+    margin:2px 0 0;
+    font-size:12.5px;
+    color:var(--cream-dim);
+    letter-spacing:.3px;
+  }
+  .stats-bar{
+    display:flex;
+    gap:18px;
+    font-family:var(--font-mono);
+    font-size:12.5px;
+    color:var(--cream-dim);
+  }
+  .stats-bar strong{
+    display:block;
+    font-size:17px;
+    color:var(--cream-text);
+    font-weight:600;
+  }
+  .stats-bar .stat{ text-align:right; }
+
+  /* ---------- Leitner boxes (signature element) ---------- */
+  .boxes{
+    display:grid;
+    grid-template-columns:repeat(8,1fr);
+    gap:6px;
+    margin-bottom:20px;
+  }
+  .box{
+    background:linear-gradient(180deg, var(--wood-panel), var(--wood-mid));
+    border:1px solid var(--wood-line);
+    border-top:2px solid var(--brass);
+    border-radius:4px 4px 6px 6px;
+    padding:8px 4px 7px;
+    text-align:center;
+    position:relative;
+    transition:transform .18s ease, border-color .18s ease;
+  }
+  .box::after{
+    content:"";
+    position:absolute;
+    left:50%; top:3px;
+    width:5px; height:5px;
+    margin-left:-2.5px;
+    border-radius:50%;
+    background:var(--brass);
+    box-shadow:0 0 0 1px rgba(0,0,0,.3);
+  }
+  .box.pulse{ transform:translateY(-2px); border-top-color:var(--brass-bright); }
+  .box-count{
+    display:block;
+    font-family:var(--font-mono);
+    font-size:16px;
+    font-weight:600;
+    color:var(--cream-text);
+    margin-top:4px;
+  }
+  .box-label{
+    display:block;
+    font-size:8.5px;
+    text-transform:uppercase;
+    letter-spacing:.4px;
+    color:var(--cream-dim);
+    margin-top:2px;
+  }
+
+  /* ---------- Mode tabs ---------- */
+  .mode-tabs{
+    display:flex;
+    gap:2px;
+    margin-bottom:22px;
+    border-bottom:1px solid var(--wood-line);
+  }
+  .tab{
+    background:transparent;
+    border:none;
+    color:var(--cream-dim);
+    font-size:14px;
+    font-weight:500;
+    padding:10px 16px;
+    border-bottom:2px solid transparent;
+    transition:color .15s ease, border-color .15s ease;
+  }
+  .tab:hover{ color:var(--cream-text); }
+  .tab.active{ color:var(--brass-bright); border-bottom-color:var(--brass); }
+
+  /* ---------- Stage ---------- */
+  .stage{ min-height:420px; display:flex; flex-direction:column; align-items:center; }
+
+  /* ---------- Estudio: index card ---------- */
+  .card-scene{ width:100%; max-width:480px; display:flex; flex-direction:column; align-items:center; }
+  .index-card{
+    width:100%;
+    min-height:250px;
+    background:
+      repeating-linear-gradient(var(--paper), var(--paper) 27px, var(--paper-dim) 28px),
+      var(--paper);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow-card);
+    position:relative;
+    padding:26px 24px 22px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    border-top:5px solid var(--brass);
+  }
+  .index-card::before{
+    content:"";
+    position:absolute;
+    left:16px; top:-9px;
+    width:14px; height:14px;
+    border-radius:50%;
+    background:var(--wood-dark);
+    box-shadow:inset 0 2px 3px rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.05);
+  }
+  .card-face{ transition:opacity .18s ease, transform .18s ease; }
+  .card-face.hiding{ opacity:0; transform:translateY(-6px) scale(.98); }
+  .card-face[hidden]{ display:none; }
+  .card-back{ opacity:0; transform:translateY(6px) scale(.98); }
+  .card-back.showing{ opacity:1; transform:translateY(0) scale(1); }
+  .card-cat{
+    display:inline-block;
+    font-family:var(--font-mono);
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.6px;
+    color:var(--accent, var(--ink-soft));
+    font-weight:600;
+    margin-bottom:10px;
+  }
+  .card-dir{
+    float:right;
+    font-family:var(--font-mono);
+    font-size:9.5px;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+  }
+  .card-word{
+    font-size:34px;
+    font-weight:600;
+    color:var(--ink);
+    line-height:1.15;
+  }
+  .card-word .art{ color:var(--ink-soft); font-weight:400; font-style:italic; font-size:.62em; }
+  .card-hint{ margin:14px 0 0; font-size:12.5px; color:var(--ink-soft); }
+  .card-es{ font-size:24px; color:var(--ink); font-weight:600; margin-bottom:6px; }
+  .card-formas{ font-family:var(--font-mono); font-size:12.5px; color:var(--ink-soft); margin:0 0 10px; }
+  .card-nem{ font-size:13.5px; color:var(--ink-soft); font-style:italic; line-height:1.5; margin:0; }
+
+  .reveal-btn, .primary-btn{
+    margin-top:20px;
+    background:var(--brass);
+    color:var(--wood-dark);
+    border:none;
+    font-weight:600;
+    font-size:14px;
+    padding:12px 22px;
+    border-radius:8px;
+    transition:background .15s ease, transform .1s ease;
+  }
+  .reveal-btn:hover, .primary-btn:hover{ background:var(--brass-bright); }
+  .reveal-btn:active, .primary-btn:active{ transform:scale(.97); }
+  kbd{
+    font-family:var(--font-mono);
+    background:rgba(0,0,0,.18);
+    padding:1px 6px;
+    border-radius:4px;
+    font-size:11px;
+    margin-left:6px;
+  }
+
+  .rate-row{ display:flex; gap:10px; margin-top:20px; width:100%; }
+  .rate{
+    flex:1;
+    border:1px solid var(--wood-line);
+    background:var(--wood-panel);
+    color:var(--cream-text);
+    padding:12px 8px;
+    border-radius:8px;
+    font-size:13px;
+    font-weight:500;
+    transition:transform .1s ease, background .15s ease, border-color .15s ease;
+  }
+  .rate:active{ transform:scale(.96); }
+  .rate-again:hover{ border-color:var(--rust); background:var(--rust-deep); }
+  .rate-hard:hover{ border-color:var(--brass); }
+  .rate-good:hover{ border-color:var(--teal); background:var(--teal-deep); }
+
+  .no-due{ text-align:center; padding:40px 20px; color:var(--cream-dim); max-width:420px; }
+  .no-due h3{ color:var(--cream-text); font-size:20px; margin-bottom:10px; }
+  .no-due p{ font-size:13.5px; line-height:1.6; margin-bottom:18px; }
+  .no-due .primary-btn{ margin:4px 6px; }
+
+  /* ---------- Quiz mode ---------- */
+  .quiz-scene{ width:100%; max-width:480px; text-align:center; }
+  .quiz-word{
+    background:var(--paper);
+    border-radius:var(--radius);
+    border-top:5px solid var(--brass);
+    box-shadow:var(--shadow-card);
+    padding:24px;
+    margin-bottom:18px;
+  }
+  .quiz-word h2{ color:var(--ink); font-size:30px; }
+  .quiz-options{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .opt{
+    background:var(--wood-panel);
+    border:1px solid var(--wood-line);
+    color:var(--cream-text);
+    padding:14px 10px;
+    border-radius:8px;
+    font-size:13.5px;
+    line-height:1.35;
+    transition:transform .1s ease, background .15s ease, border-color .15s ease;
+  }
+  .opt:hover{ border-color:var(--brass); }
+  .opt.correct{ background:var(--teal-deep); border-color:var(--teal); }
+  .opt.incorrect{ background:var(--rust-deep); border-color:var(--rust); }
+  .opt[disabled]{ cursor:default; }
+  .quiz-feedback{
+    margin-top:16px;
+    font-size:13px;
+    color:var(--cream-dim);
+    font-style:italic;
+    min-height:20px;
+  }
+  .quiz-next{ margin-top:14px; }
+
+  /* ---------- Match mode ---------- */
+  .match-scene{ width:100%; max-width:560px; }
+  .match-meta{
+    display:flex; justify-content:space-between;
+    font-family:var(--font-mono); font-size:12px; color:var(--cream-dim);
+    margin-bottom:12px;
+  }
+  .match-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:8px;
+  }
+  .tile{
+    aspect-ratio:1/0.85;
+    background:var(--wood-panel);
+    border:1px solid var(--wood-line);
+    border-radius:8px;
+    color:var(--cream-text);
+    font-size:12px;
+    padding:6px;
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    line-height:1.25;
+    transition:background .15s ease, border-color .15s ease, transform .12s ease;
+  }
+  .tile:hover{ border-color:var(--brass); }
+  .tile.flipped{ background:var(--paper); color:var(--ink); border-color:var(--brass); }
+  .tile.matched{ background:var(--teal-deep); border-color:var(--teal); color:var(--cream-text); opacity:.55; }
+  .tile.wrong{ background:var(--rust-deep); border-color:var(--rust); }
+  .match-note{ text-align:center; font-size:11.5px; color:var(--cream-dim); margin-top:12px; font-style:italic; }
+
+  /* ---------- Break banner ---------- */
+  .break-banner{
+    position:fixed; left:50%; bottom:22px; transform:translateX(-50%);
+    background:var(--wood-panel); border:1px solid var(--brass);
+    color:var(--cream-text); padding:12px 16px; border-radius:10px;
+    display:flex; align-items:center; gap:14px; font-size:13px;
+    box-shadow:0 10px 30px rgba(0,0,0,.5);
+    max-width:90vw;
+    z-index:50;
+  }
+  .break-banner button{
+    background:var(--brass); color:var(--wood-dark); border:none;
+    padding:7px 14px; border-radius:6px; font-weight:600; font-size:12.5px;
+    white-space:nowrap;
+  }
+
+  /* ---------- Footer / modal ---------- */
+  .footnote{ text-align:center; margin-top:30px; }
+  .link-btn{
+    background:none; border:none; color:var(--cream-dim);
+    font-size:12px; text-decoration:underline; text-underline-offset:3px;
+  }
+  .link-btn:hover{ color:var(--brass-bright); }
+
+  .modal{
+    position:fixed; inset:0; background:rgba(0,0,0,.6);
+    display:flex; align-items:center; justify-content:center; padding:20px; z-index:100;
+  }
+  .modal[hidden]{ display:none; }
+  .modal-card{
+    background:var(--wood-panel); border:1px solid var(--wood-line);
+    border-top:4px solid var(--brass);
+    border-radius:var(--radius); padding:26px; max-width:480px;
+    box-shadow:var(--shadow-card);
+  }
+  .modal-card h2{ color:var(--brass-bright); font-size:20px; margin-bottom:12px; }
+  .modal-card p{ font-size:13.5px; line-height:1.65; color:var(--cream-text); margin:0 0 10px; }
+  .modal-card ul{ font-size:13px; line-height:1.7; color:var(--cream-dim); padding-left:18px; margin:0 0 14px;}
+
+  /* ---------- Focus & motion ---------- */
+  button:focus-visible{ outline:2px solid var(--brass-bright); outline-offset:2px; }
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; animation:none !important; }
+  }
+
+  @media (max-width:640px){
+    .boxes{ grid-template-columns:repeat(4,1fr); }
+    .card-word{ font-size:27px; }
+    .quiz-options{ grid-template-columns:1fr; }
+    .match-grid{ grid-template-columns:repeat(3,1fr); }
+    .stats-bar{ gap:12px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <h1>Lernkartei</h1>
+      <p class="tagline">253 palabras nucleares · repetición espaciada</p>
+    </div>
+    <div class="stats-bar" id="statsBar"></div>
+  </header>
+
+  <section class="boxes" id="boxesStrip" aria-label="Progreso por cajón"></section>
+
+  <nav class="mode-tabs" id="modeTabs">
+    <button class="tab active" data-mode="estudio">Estudio</button>
+    <button class="tab" data-mode="quick">Elección rápida</button>
+    <button class="tab" data-mode="match">Parejas</button>
+  </nav>
+
+  <main class="stage" id="stage"></main>
+
+  <footer class="footnote">
+    <button class="link-btn" id="howItWorksBtn">¿Cómo funciona el repaso?</button>
+  </footer>
+</div>
+
+<div class="break-banner" id="breakBanner" hidden>
+  <span>Llevas un buen rato seguido — ¿un descanso corto?</span>
+  <button id="dismissBreak">Sigo</button>
+</div>
+
+<div class="modal" id="howItWorksModal" hidden>
+  <div class="modal-card">
+    <h2>El sistema de cajones</h2>
+    <p>Cada palabra vive en un cajón según lo bien que la recuerdes. Es el sistema Leitner: el mismo método de fichas físicas que inspiró este juego.</p>
+    <ul>
+      <li><strong>Nueva</strong> → la ves por primera vez.</li>
+      <li><strong>Cajones 1-2</strong> → repaso dentro de la misma sesión, cada pocas tarjetas.</li>
+      <li><strong>Cajones 3-6</strong> → repaso a 1, 3, 7 y 16 días — vuelve solo cuando toca.</li>
+      <li><strong>Dominada</strong> → repaso cada 35 días, mantenimiento a largo plazo.</li>
+    </ul>
+    <p>Si fallas una palabra, vuelve a un cajón temprano — sin penalización, solo repetición extra.</p>
+    <p>El modo <strong>Parejas</strong> es libre: no mueve las palabras de cajón, es solo repaso ligero.</p>
+    <button class="primary-btn" id="closeModal">Entendido</button>
+  </div>
+</div>
+
+<script>
+const CARDS = [{"id":"w000","cat":"Gramática","sub":"Artículo","de":"der","es":"el (masc. nominativo)","formas":"","nem":"Recuerda 'der' con un soldado firme y masculino; siempre acompaña sustantivos masculinos en sujeto."},{"id":"w001","cat":"Gramática","sub":"Artículo","de":"die","es":"la / las (fem. / plural)","formas":"","nem":"Se pronuncia 'di', como el final dulce de 'candy' en inglés: asócialo a lo femenino."},{"id":"w002","cat":"Gramática","sub":"Artículo","de":"das","es":"el / lo (neutro)","formas":"","nem":"Neutro, sin marca de género fuerte: piensa en 'eso' genérico, sin etiqueta."},{"id":"w003","cat":"Gramática","sub":"Artículo","de":"den","es":"al (masc. acusativo)","formas":"","nem":"Añade '-n' cuando el masculino recibe la acción directamente: 'lo veo A ÉL' = den."},{"id":"w004","cat":"Gramática","sub":"Artículo","de":"dem","es":"al (masc./neutro dativo)","formas":"","nem":"Rima con 'them' en inglés: dativo responde '¿a quién se lo doy?'."},{"id":"w005","cat":"Gramática","sub":"Artículo","de":"des","es":"del (genitivo masc./neutro)","formas":"","nem":"'Des-' de posesión: indica de quién es algo, como un prefijo de pertenencia."},{"id":"w006","cat":"Gramática","sub":"Artículo","de":"ein","es":"un (masc./neutro)","formas":"","nem":"Igual que 'one' en inglés: un solo objeto, sin especificar cuál."},{"id":"w007","cat":"Gramática","sub":"Artículo","de":"eine","es":"una (fem.)","formas":"","nem":"Añade '-e' para femenino, patrón que se repite en muchos adjetivos alemanes."},{"id":"w008","cat":"Gramática","sub":"Artículo","de":"kein","es":"ningún / ninguno","formas":"","nem":"'Kein' = 'ein' con una k de 'kaputt' (roto, no hay nada)."},{"id":"w009","cat":"Gramática","sub":"Pronombre","de":"ich","es":"yo","formas":"","nem":"Sonido gutural fuerte (ch): imagina apuntarte al pecho mientras lo dices."},{"id":"w010","cat":"Gramática","sub":"Pronombre","de":"du","es":"tú","formas":"","nem":"Casi idéntico al español 'tú' en sonido y en informalidad."},{"id":"w011","cat":"Gramática","sub":"Pronombre","de":"er","es":"él","formas":"","nem":"Comparte inicio con 'Herr' (señor): masculino, formal."},{"id":"w012","cat":"Gramática","sub":"Pronombre","de":"sie","es":"ella / ellos-ellas / usted","formas":"","nem":"La palabra comodín: el contexto decide el significado exacto."},{"id":"w013","cat":"Gramática","sub":"Pronombre","de":"es","es":"ello / eso","formas":"","nem":"Neutro, casi igual al 'es' español de 'es así'."},{"id":"w014","cat":"Gramática","sub":"Pronombre","de":"wir","es":"nosotros","formas":"","nem":"Suena a 'vía': vamos por la misma vía juntos."},{"id":"w015","cat":"Gramática","sub":"Pronombre","de":"ihr","es":"vosotros","formas":"","nem":"Cuidado: también significa 'su/de ella' en otro contexto — el género gramatical decide."},{"id":"w016","cat":"Gramática","sub":"Pronombre","de":"Sie","es":"usted / ustedes","formas":"","nem":"Siempre con mayúscula: la letra grande marca la formalidad y el respeto."},{"id":"w017","cat":"Gramática","sub":"Pronombre","de":"mich","es":"me (acusativo)","formas":"","nem":"Rima con 'ich' (yo) pero con -m de 'me': soy yo recibiendo la acción."},{"id":"w018","cat":"Gramática","sub":"Pronombre","de":"dich","es":"te (acusativo)","formas":"","nem":"Paralelo a 'mich' pero con d- de 'du' (tú)."},{"id":"w019","cat":"Gramática","sub":"Pronombre","de":"ihn","es":"lo / él (acusativo)","formas":"","nem":"Suena a 'in': como meterlo dentro de algo, recibiendo la acción."},{"id":"w020","cat":"Gramática","sub":"Pronombre","de":"uns","es":"nos / nosotros","formas":"","nem":"Abreviación cercana a 'us' en inglés."},{"id":"w021","cat":"Gramática","sub":"Pronombre","de":"mein","es":"mi (posesivo)","formas":"","nem":"Casi idéntico a 'my' en inglés."},{"id":"w022","cat":"Gramática","sub":"Pronombre","de":"dein","es":"tu (posesivo)","formas":"","nem":"Rima con 'mein' pero con d- de 'du' (tú)."},{"id":"w023","cat":"Gramática","sub":"Preposición","de":"in","es":"en","formas":"","nem":"Prácticamente igual que en español: sin esfuerzo."},{"id":"w024","cat":"Gramática","sub":"Preposición","de":"auf","es":"sobre / encima de","formas":"","nem":"Piensa en subir 'arriba' (auf) de una superficie."},{"id":"w025","cat":"Gramática","sub":"Preposición","de":"mit","es":"con","formas":"","nem":"Suena a 'mixed with': mezclado junto con algo."},{"id":"w026","cat":"Gramática","sub":"Preposición","de":"zu","es":"a / hacia","formas":"","nem":"Corto como tu destino: vas 'zu' algún sitio."},{"id":"w027","cat":"Gramática","sub":"Preposición","de":"von","es":"de / desde","formas":"","nem":"Suena a 'fondo': de dónde vienes, el fondo del origen."},{"id":"w028","cat":"Gramática","sub":"Preposición","de":"für","es":"para","formas":"","nem":"Suena a 'fur' (piel) en inglés: algo 'para' abrigarte."},{"id":"w029","cat":"Gramática","sub":"Preposición","de":"bei","es":"en casa de / junto a","formas":"","nem":"Suena a 'ver' (vei): estás junto a alguien, viéndolo de cerca."},{"id":"w030","cat":"Gramática","sub":"Preposición","de":"nach","es":"hacia / después de","formas":"","nem":"Suena a 'noche': después llega la noche."},{"id":"w031","cat":"Gramática","sub":"Preposición","de":"aus","es":"desde / fuera de","formas":"","nem":"Relación directa: sales 'afuera' (aus)."},{"id":"w032","cat":"Gramática","sub":"Preposición","de":"über","es":"sobre / encima","formas":"","nem":"Suena a 'súper': por encima de todo."},{"id":"w033","cat":"Gramática","sub":"Preposición","de":"unter","es":"debajo de","formas":"","nem":"Casi idéntico a 'under' en inglés."},{"id":"w034","cat":"Gramática","sub":"Preposición","de":"durch","es":"a través de","formas":"","nem":"Suena a atravesar algo 'duro'."},{"id":"w035","cat":"Gramática","sub":"Preposición","de":"gegen","es":"contra","formas":"","nem":"Rima con 'again': ir otra vez contra algo."},{"id":"w036","cat":"Gramática","sub":"Preposición","de":"ohne","es":"sin","formas":"","nem":"Suena a '¡oh, no tengo nada!': sin nada."},{"id":"w037","cat":"Gramática","sub":"Preposición","de":"um","es":"alrededor de / a las (hora)","formas":"","nem":"Corto y redondo: 'um' rodea como un círculo."},{"id":"w038","cat":"Gramática","sub":"Conjunción","de":"und","es":"y","formas":"","nem":"Casi igual que 'and' en inglés."},{"id":"w039","cat":"Gramática","sub":"Conjunción","de":"oder","es":"o","formas":"","nem":"Rima con 'u otra' opción alternativa."},{"id":"w040","cat":"Gramática","sub":"Conjunción","de":"aber","es":"pero","formas":"","nem":"Suena a dudar: 'a ver... pero...'."},{"id":"w041","cat":"Gramática","sub":"Conjunción","de":"weil","es":"porque","formas":"","nem":"Suena a 'while' (mientras explico el porqué)."},{"id":"w042","cat":"Gramática","sub":"Conjunción","de":"dass","es":"que (conjunción)","formas":"","nem":"Se escribe casi como 'das' pero con doble s: introduce una idea completa."},{"id":"w043","cat":"Gramática","sub":"Conjunción","de":"wenn","es":"si / cuando","formas":"","nem":"Suena a 'when' en inglés: condición o momento."},{"id":"w044","cat":"Gramática","sub":"Conjunción","de":"als","es":"como / cuando (pasado)","formas":"","nem":"Suena a 'alza' el recuerdo de aquel momento pasado."},{"id":"w045","cat":"Gramática","sub":"Interrogativo","de":"was","es":"qué","formas":"","nem":"Suena a 'was' en inglés (era) pero aquí pregunta 'qué'."},{"id":"w046","cat":"Gramática","sub":"Interrogativo","de":"wer","es":"quién","formas":"","nem":"Rima con 'where' pero significa 'quién': falso amigo a vigilar."},{"id":"w047","cat":"Gramática","sub":"Interrogativo","de":"wie","es":"cómo","formas":"","nem":"Suena a 'vi': ¿cómo lo viste?"},{"id":"w048","cat":"Gramática","sub":"Interrogativo","de":"wo","es":"dónde","formas":"","nem":"Casi idéntico a 'dónde' sin la d inicial."},{"id":"w049","cat":"Gramática","sub":"Interrogativo","de":"wann","es":"cuándo","formas":"","nem":"Cognado real de 'when': mismo origen germánico, sonido casi igual."},{"id":"w050","cat":"Gramática","sub":"Interrogativo","de":"warum","es":"por qué","formas":"","nem":"'Was' (qué) + 'rum' (alrededor): qué hay alrededor de esto."},{"id":"w051","cat":"Gramática","sub":"Interrogativo","de":"welche","es":"cuál / cuáles","formas":"","nem":"Cognado directo de 'which' en inglés."},{"id":"w052","cat":"Verbo","sub":"Auxiliar","de":"sein","es":"ser / estar","formas":"ist / war / gewesen","nem":"El verbo más importante del idioma: imagina un ser diciendo 'soy' con el mismo sonido inicial."},{"id":"w053","cat":"Verbo","sub":"Auxiliar","de":"haben","es":"tener / haber","formas":"hat / hatte / gehabt","nem":"Cognado directo del español 'haber': mismo uso como auxiliar de tiempos compuestos."},{"id":"w054","cat":"Verbo","sub":"Auxiliar","de":"werden","es":"llegar a ser / convertirse","formas":"wird / wurde / geworden","nem":"Suena a 'verterse en algo nuevo': te transformas o conviertes."},{"id":"w055","cat":"Verbo","sub":"Modal","de":"können","es":"poder / saber hacer","formas":"kann / konnte / gekonnt","nem":"Suena a 'conocer': sabes hacer algo porque lo conoces bien."},{"id":"w056","cat":"Verbo","sub":"Modal","de":"müssen","es":"deber / tener que","formas":"muss / musste / gemusst","nem":"Cognado casi directo de 'must' en inglés."},{"id":"w057","cat":"Verbo","sub":"Modal","de":"wollen","es":"querer","formas":"will / wollte / gewollt","nem":"Suena a 'voluntad': quieres algo con fuerza de voluntad."},{"id":"w058","cat":"Verbo","sub":"Modal","de":"sollen","es":"deber (obligación externa)","formas":"soll / sollte / gesollt","nem":"Suena a 'solo hazlo, es tu deber': obligación que viene de fuera."},{"id":"w059","cat":"Verbo","sub":"Modal","de":"dürfen","es":"tener permiso","formas":"darf / durfte / gedurft","nem":"Suena a 'durar el permiso': tienes luz verde para hacerlo."},{"id":"w060","cat":"Verbo","sub":"Modal","de":"mögen","es":"gustar / agradar","formas":"mag / mochte / gemocht","nem":"Suena a 'me gusta más esto': preferencia suave."},{"id":"w061","cat":"Verbo","sub":"Léxico","de":"machen","es":"hacer","formas":"macht / machte / gemacht","nem":"Suena a 'máquina' que hace cosas constantemente."},{"id":"w062","cat":"Verbo","sub":"Léxico","de":"gehen","es":"ir","formas":"geht / ging / gegangen","nem":"Suena a 'ganar terreno' caminando: avanzas hacia adelante."},{"id":"w063","cat":"Verbo","sub":"Léxico","de":"kommen","es":"venir","formas":"kommt / kam / gekommen","nem":"Suena a 'come' en inglés: 've(n) aquí' a comer."},{"id":"w064","cat":"Verbo","sub":"Léxico","de":"sagen","es":"decir","formas":"sagt / sagte / gesagt","nem":"Suena a 'sagaz': dices algo con sabiduría."},{"id":"w065","cat":"Verbo","sub":"Léxico","de":"geben","es":"dar","formas":"gibt / gab / gegeben","nem":"Suena a 'gaveta' que abres para dar algo de dentro."},{"id":"w066","cat":"Verbo","sub":"Léxico","de":"sehen","es":"ver","formas":"sieht / sah / gesehen","nem":"Suena a 'se ve': casi idéntico al español."},{"id":"w067","cat":"Verbo","sub":"Léxico","de":"wissen","es":"saber (un hecho)","formas":"weiß / wusste / gewusst","nem":"Suena a 'visión' del conocimiento: sabes porque 've(e)s' la información."},{"id":"w068","cat":"Verbo","sub":"Léxico","de":"nehmen","es":"tomar / coger","formas":"nimmt / nahm / genommen","nem":"Suena a 'nombrarlo tuyo': lo tomas para ti."},{"id":"w069","cat":"Verbo","sub":"Léxico","de":"finden","es":"encontrar","formas":"findet / fand / gefunden","nem":"Suena a 'fin' de la búsqueda: por fin lo encontraste."},{"id":"w070","cat":"Verbo","sub":"Léxico","de":"lassen","es":"dejar / permitir","formas":"lässt / ließ / gelassen","nem":"Suena a 'lazo' que sueltas: dejas ir algo."},{"id":"w071","cat":"Verbo","sub":"Léxico","de":"stehen","es":"estar de pie","formas":"steht / stand / gestanden","nem":"Suena a 'estación': de pie esperando el tren."},{"id":"w072","cat":"Verbo","sub":"Léxico","de":"bleiben","es":"quedarse","formas":"bleibt / blieb / geblieben","nem":"Suena a 'blindarse' en el sitio: te quedas fijo, sin moverte."},{"id":"w073","cat":"Verbo","sub":"Léxico","de":"heißen","es":"llamarse","formas":"heißt / hieß / geheißen","nem":"Suena a 'así se llama': fórmula de presentación."},{"id":"w074","cat":"Verbo","sub":"Léxico","de":"denken","es":"pensar","formas":"denkt / dachte / gedacht","nem":"Suena a 'tanque' pensante: piensas con peso y profundidad."},{"id":"w075","cat":"Verbo","sub":"Léxico","de":"halten","es":"sostener / parar","formas":"hält / hielt / gehalten","nem":"Suena a 'alto': frenas y sostienes algo firme."},{"id":"w076","cat":"Verbo","sub":"Léxico","de":"bringen","es":"traer","formas":"bringt / brachte / gebracht","nem":"Suena a 'brindar' algo: lo traes para ofrecerlo."},{"id":"w077","cat":"Verbo","sub":"Léxico","de":"kennen","es":"conocer (a alguien/algo)","formas":"kennt / kannte / gekannt","nem":"Comparte raíz con 'können': conocer y saber-hacer nacen de la misma familia."},{"id":"w078","cat":"Verbo","sub":"Léxico","de":"glauben","es":"creer","formas":"glaubt / glaubte / geglaubt","nem":"Suena a 'globo' de fe: crees en algo que flota sin prueba total."},{"id":"w079","cat":"Verbo","sub":"Léxico","de":"brauchen","es":"necesitar","formas":"braucht / brauchte / gebraucht","nem":"Suena a 'bracear' con urgencia porque lo necesitas ya."},{"id":"w080","cat":"Verbo","sub":"Léxico","de":"arbeiten","es":"trabajar","formas":"arbeitet / arbeitete / gearbeitet","nem":"Suena a 'árbitro' trabajando activamente en el partido."},{"id":"w081","cat":"Verbo","sub":"Léxico","de":"spielen","es":"jugar","formas":"spielt / spielte / gespielt","nem":"Suena a 'espiral' del juego: das vueltas mientras juegas."},{"id":"w082","cat":"Sustantivo","sub":"Personas","de":"der Mensch","es":"el ser humano","formas":"","nem":"Suena al 'mensch' que usan en inglés coloquial para una persona buena y decente."},{"id":"w083","cat":"Sustantivo","sub":"Personas","de":"der Mann","es":"el hombre","formas":"","nem":"Casi idéntico a 'man' en inglés."},{"id":"w084","cat":"Sustantivo","sub":"Personas","de":"die Frau","es":"la mujer / señora","formas":"","nem":"Asócialo a 'flor': femenino y delicado (truco mnemónico, no etimológico)."},{"id":"w085","cat":"Sustantivo","sub":"Personas","de":"das Kind","es":"el niño / la niña","formas":"","nem":"Suena a los huevos 'Kinder', pensados justo para niños."},{"id":"w086","cat":"Sustantivo","sub":"Personas","de":"der Freund / die Freundin","es":"el amigo / la amiga","formas":"","nem":"Cognado directo de 'friend' en inglés."},{"id":"w087","cat":"Sustantivo","sub":"Personas","de":"die Familie","es":"la familia","formas":"","nem":"Cognado latino casi idéntico al español."},{"id":"w088","cat":"Sustantivo","sub":"Personas","de":"der Kollege / die Kollegin","es":"el / la colega","formas":"","nem":"Cognado directo con el español 'colega'."},{"id":"w089","cat":"Sustantivo","sub":"Personas","de":"die Mutter","es":"la madre","formas":"","nem":"Comparte la 'M' inicial con 'madre' y con 'mother' en inglés."},{"id":"w090","cat":"Sustantivo","sub":"Personas","de":"der Vater","es":"el padre","formas":"","nem":"Cognado directo de 'father' en inglés."},{"id":"w091","cat":"Sustantivo","sub":"Personas","de":"der Sohn","es":"el hijo","formas":"","nem":"Cognado directo de 'son' en inglés."},{"id":"w092","cat":"Sustantivo","sub":"Personas","de":"die Tochter","es":"la hija","formas":"","nem":"Cognado directo de 'daughter' en inglés (mismo origen germánico)."},{"id":"w093","cat":"Sustantivo","sub":"Personas","de":"der Bruder","es":"el hermano","formas":"","nem":"Cognado directo de 'brother' en inglés."},{"id":"w094","cat":"Sustantivo","sub":"Personas","de":"die Schwester","es":"la hermana","formas":"","nem":"Comparte la 'ss' con 'sister' en inglés: mismo origen."},{"id":"w095","cat":"Sustantivo","sub":"Personas","de":"der Herr","es":"el señor","formas":"","nem":"Suena a como llamas a alguien con respeto: '¡Herr!'."},{"id":"w096","cat":"Sustantivo","sub":"Tiempo","de":"die Zeit","es":"el tiempo","formas":"","nem":"Suena a 'cita': tienes una cita marcada en el tiempo."},{"id":"w097","cat":"Sustantivo","sub":"Tiempo","de":"das Jahr","es":"el año","formas":"","nem":"Suena a 'ya': ya pasó otro año más."},{"id":"w098","cat":"Sustantivo","sub":"Tiempo","de":"der Tag","es":"el día","formas":"","nem":"Suena a la etiqueta ('tag' en inglés) que marca cada día."},{"id":"w099","cat":"Sustantivo","sub":"Tiempo","de":"die Woche","es":"la semana","formas":"","nem":"Suena a 'voz que' repite la misma rutina cada semana."},{"id":"w100","cat":"Sustantivo","sub":"Tiempo","de":"der Monat","es":"el mes","formas":"","nem":"Suena a 'moneda': pagas el alquiler cada mes."},{"id":"w101","cat":"Sustantivo","sub":"Tiempo","de":"die Stunde","es":"la hora","formas":"","nem":"Suena a 'estuvo' una hora entera ahí parado."},{"id":"w102","cat":"Sustantivo","sub":"Tiempo","de":"die Minute","es":"el minuto","formas":"","nem":"Casi idéntico al español."},{"id":"w103","cat":"Sustantivo","sub":"Tiempo","de":"der Moment","es":"el momento","formas":"","nem":"Casi idéntico al español."},{"id":"w104","cat":"Sustantivo","sub":"Tiempo","de":"der Morgen","es":"la mañana","formas":"","nem":"Suena a 'morgue' fría de la madrugada: imagen algo oscura pero memorable."},{"id":"w105","cat":"Sustantivo","sub":"Tiempo","de":"der Abend","es":"la tarde / noche","formas":"","nem":"Suena a 'abanico' que usas en la tarde calurosa."},{"id":"w106","cat":"Sustantivo","sub":"Tiempo","de":"die Nacht","es":"la noche","formas":"","nem":"Cognado casi directo del español 'noche'."},{"id":"w107","cat":"Sustantivo","sub":"Tiempo","de":"das Wochenende","es":"el fin de semana","formas":"","nem":"Compuesto transparente: 'Woche' (semana) + 'Ende' (fin)."},{"id":"w108","cat":"Sustantivo","sub":"Lugar","de":"das Land","es":"el país / la tierra","formas":"","nem":"Cognado directo de 'land' en inglés."},{"id":"w109","cat":"Sustantivo","sub":"Lugar","de":"die Stadt","es":"la ciudad","formas":"","nem":"Suena a 'estadio' en medio de la ciudad."},{"id":"w110","cat":"Sustantivo","sub":"Lugar","de":"die Welt","es":"el mundo","formas":"","nem":"Suena a dar la 'vuelta' al mundo."},{"id":"w111","cat":"Sustantivo","sub":"Lugar","de":"das Haus","es":"la casa","formas":"","nem":"Cognado directo de 'house' en inglés."},{"id":"w112","cat":"Sustantivo","sub":"Lugar","de":"die Wohnung","es":"el piso / apartamento","formas":"","nem":"Viene de 'wohnen' (vivir): donde vives habitualmente."},{"id":"w113","cat":"Sustantivo","sub":"Lugar","de":"das Zimmer","es":"la habitación","formas":"","nem":"Suena a 'cima' de la casa: tu cuarto de arriba."},{"id":"w114","cat":"Sustantivo","sub":"Lugar","de":"die Straße","es":"la calle","formas":"","nem":"Suena a 'estirarse' recta como una calle."},{"id":"w115","cat":"Sustantivo","sub":"Lugar","de":"der Weg","es":"el camino","formas":"","nem":"Cognado directo de 'way' en inglés."},{"id":"w116","cat":"Sustantivo","sub":"Lugar","de":"der Platz","es":"la plaza / el sitio","formas":"","nem":"Casi idéntico al español 'plaza'."},{"id":"w117","cat":"Sustantivo","sub":"Lugar","de":"der Ort","es":"el lugar","formas":"","nem":"Suena a 'orto' (origen): el lugar de donde algo viene."},{"id":"w118","cat":"Sustantivo","sub":"Lugar","de":"die Schule","es":"la escuela","formas":"","nem":"Cognado directo con sonido 'shu-le' parecido a 'escuela'."},{"id":"w119","cat":"Sustantivo","sub":"Lugar","de":"die Arbeit","es":"el trabajo","formas":"","nem":"Suena a 'árbitro' trabajando en el partido."},{"id":"w120","cat":"Sustantivo","sub":"Lugar","de":"die Firma","es":"la empresa","formas":"","nem":"Casi idéntico al español 'firma' (empresa)."},{"id":"w121","cat":"Sustantivo","sub":"Lugar","de":"das Büro","es":"la oficina","formas":"","nem":"Casi idéntico al español 'buró'."},{"id":"w122","cat":"Sustantivo","sub":"Abstracto","de":"das Leben","es":"la vida","formas":"","nem":"Suena a 'elevar' tu vida hacia algo mejor."},{"id":"w123","cat":"Sustantivo","sub":"Abstracto","de":"die Frage","es":"la pregunta","formas":"","nem":"Suena a 'fragua': donde forjas tus preguntas."},{"id":"w124","cat":"Sustantivo","sub":"Abstracto","de":"die Antwort","es":"la respuesta","formas":"","nem":"Compuesto: 'ant-' (contra) + 'Wort' (palabra) = palabra de vuelta."},{"id":"w125","cat":"Sustantivo","sub":"Abstracto","de":"die Idee","es":"la idea","formas":"","nem":"Cognado directo del español, casi sin cambio."},{"id":"w126","cat":"Sustantivo","sub":"Abstracto","de":"der Grund","es":"el motivo / fondo","formas":"","nem":"Cognado directo de 'ground' en inglés: la base de algo."},{"id":"w127","cat":"Sustantivo","sub":"Abstracto","de":"das Beispiel","es":"el ejemplo","formas":"","nem":"Compuesto: 'bei' (junto a) + 'Spiel' (juego): un ejemplo junto al juego para entender mejor."},{"id":"w128","cat":"Sustantivo","sub":"Abstracto","de":"der Fall","es":"el caso","formas":"","nem":"Cognado directo de 'fall' (caída) en inglés: 'en caso de que caiga'."},{"id":"w129","cat":"Sustantivo","sub":"Abstracto","de":"der Teil","es":"la parte","formas":"","nem":"Suena a 'tejer' una parte dentro del conjunto."},{"id":"w130","cat":"Sustantivo","sub":"Abstracto","de":"das Ende","es":"el fin","formas":"","nem":"Cognado directo de 'end' en inglés."},{"id":"w131","cat":"Sustantivo","sub":"Abstracto","de":"der Anfang","es":"el comienzo","formas":"","nem":"Suena a 'un fan' que recién empieza a serlo."},{"id":"w132","cat":"Sustantivo","sub":"Abstracto","de":"das Ergebnis","es":"el resultado","formas":"","nem":"Viene de 'ergeben' (resultar): lo que 'se da' al final."},{"id":"w133","cat":"Sustantivo","sub":"Abstracto","de":"die Möglichkeit","es":"la posibilidad","formas":"","nem":"De 'möglich' (posible) + '-keit' (sufijo de sustantivo abstracto)."},{"id":"w134","cat":"Sustantivo","sub":"Abstracto","de":"die Bedeutung","es":"el significado","formas":"","nem":"De 'bedeuten' (significar): lo que la palabra señala."},{"id":"w135","cat":"Sustantivo","sub":"Abstracto","de":"die Wahrheit","es":"la verdad","formas":"","nem":"Suena a 'guardar' la verdad con cuidado."},{"id":"w136","cat":"Sustantivo","sub":"Abstracto","de":"die Meinung","es":"la opinión","formas":"","nem":"Contiene 'mein' (mi): tu propia opinión personal."},{"id":"w137","cat":"Sustantivo","sub":"Abstracto","de":"die Erfahrung","es":"la experiencia","formas":"","nem":"Contiene 'fahren' (viajar): ganas experiencia en el camino."},{"id":"w138","cat":"Sustantivo","sub":"Abstracto","de":"die Entscheidung","es":"la decisión","formas":"","nem":"De 'entscheiden' (decidir): literalmente 'cortar' entre opciones."},{"id":"w139","cat":"Sustantivo","sub":"Abstracto","de":"das Verhältnis","es":"la relación","formas":"","nem":"Suena a 'ver el nivel' de una relación."},{"id":"w140","cat":"Sustantivo","sub":"Abstracto","de":"der Zustand","es":"el estado","formas":"","nem":"Compuesto con 'Stand' (de pie): el estado en que algo 'está parado'."},{"id":"w141","cat":"Sustantivo","sub":"Abstracto","de":"die Situation","es":"la situación","formas":"","nem":"Cognado directo, casi sin cambio de forma."},{"id":"w142","cat":"Sustantivo","sub":"Cuerpo","de":"die Hand","es":"la mano","formas":"","nem":"Cognado directo de 'hand' en inglés."},{"id":"w143","cat":"Sustantivo","sub":"Cuerpo","de":"der Kopf","es":"la cabeza","formas":"","nem":"Suena a 'copa' que llevas puesta en la cabeza."},{"id":"w144","cat":"Sustantivo","sub":"Cuerpo","de":"das Auge","es":"el ojo","formas":"","nem":"Suena a 'ojea' (mirar) con el ojo."},{"id":"w145","cat":"Sustantivo","sub":"Cuerpo","de":"das Herz","es":"el corazón","formas":"","nem":"Suena a 'hearts' en inglés: los corazones de la baraja."},{"id":"w146","cat":"Sustantivo","sub":"Cuerpo","de":"das Gesicht","es":"la cara","formas":"","nem":"Suena a los 'gestos' que haces con la cara."},{"id":"w147","cat":"Sustantivo","sub":"Cuerpo","de":"der Fuß","es":"el pie","formas":"","nem":"Cognado directo de 'foot' en inglés."},{"id":"w148","cat":"Sustantivo","sub":"Cuerpo","de":"der Arm","es":"el brazo","formas":"","nem":"Casi idéntico a 'arm' en inglés."},{"id":"w149","cat":"Sustantivo","sub":"Cuerpo","de":"das Bein","es":"la pierna","formas":"","nem":"Suena a 'vaina' (hueso alargado) de la pierna."},{"id":"w150","cat":"Sustantivo","sub":"Cuerpo","de":"der Mund","es":"la boca","formas":"","nem":"Suena a 'mundo' que describes hablando con la boca."},{"id":"w151","cat":"Sustantivo","sub":"Cuerpo","de":"das Ohr","es":"el oído / la oreja","formas":"","nem":"Cognado fonético directo con el verbo español 'oír'."},{"id":"w152","cat":"Sustantivo","sub":"Objetos","de":"das Wort","es":"la palabra","formas":"","nem":"Cognado directo de 'word' en inglés."},{"id":"w153","cat":"Sustantivo","sub":"Objetos","de":"das Buch","es":"el libro","formas":"","nem":"Cognado directo de 'book' en inglés."},{"id":"w154","cat":"Sustantivo","sub":"Objetos","de":"der Brief","es":"la carta","formas":"","nem":"Cognado directo de 'brief' (breve) en inglés: una carta corta."},{"id":"w155","cat":"Sustantivo","sub":"Objetos","de":"die Zeitung","es":"el periódico","formas":"","nem":"De 'Zeit' (tiempo) + '-ung': información del momento actual."},{"id":"w156","cat":"Sustantivo","sub":"Objetos","de":"das Auto","es":"el coche","formas":"","nem":"Casi idéntico al español 'auto'."},{"id":"w157","cat":"Sustantivo","sub":"Objetos","de":"der Tisch","es":"la mesa","formas":"","nem":"Suena a 'disco' que pones encima de la mesa."},{"id":"w158","cat":"Sustantivo","sub":"Objetos","de":"der Stuhl","es":"la silla","formas":"","nem":"Suena a 'estuvo' sentado en la silla."},{"id":"w159","cat":"Sustantivo","sub":"Objetos","de":"die Tür","es":"la puerta","formas":"","nem":"Suena a 'tour' que empieza justo al abrir la puerta."},{"id":"w160","cat":"Sustantivo","sub":"Objetos","de":"das Fenster","es":"la ventana","formas":"","nem":"Suena a 'festival' que ves a través de la ventana."},{"id":"w161","cat":"Sustantivo","sub":"Objetos","de":"das Bild","es":"la imagen","formas":"","nem":"Suena a 'building' (construyes una imagen mental)."},{"id":"w162","cat":"Sustantivo","sub":"Objetos","de":"das Geld","es":"el dinero","formas":"","nem":"Suena a 'gelatina' dorada: el color del oro, el dinero."},{"id":"w163","cat":"Sustantivo","sub":"Objetos","de":"das Telefon","es":"el teléfono","formas":"","nem":"Casi idéntico al español."},{"id":"w164","cat":"Sustantivo","sub":"Objetos","de":"der Computer","es":"el ordenador","formas":"","nem":"Casi idéntico al español/inglés."},{"id":"w165","cat":"Sustantivo","sub":"Naturaleza","de":"das Wasser","es":"el agua","formas":"","nem":"El sonido 'guas-ser' imita el fluir del agua."},{"id":"w166","cat":"Sustantivo","sub":"Naturaleza","de":"das Feuer","es":"el fuego","formas":"","nem":"Comparte la raíz sonora inicial con 'fuego'."},{"id":"w167","cat":"Sustantivo","sub":"Naturaleza","de":"die Luft","es":"el aire","formas":"","nem":"Suena a 'Lufthansa': la aerolínea del aire."},{"id":"w168","cat":"Sustantivo","sub":"Naturaleza","de":"die Sonne","es":"el sol","formas":"","nem":"Suena 'sonoro' y brillante, como el propio sol."},{"id":"w169","cat":"Sustantivo","sub":"Naturaleza","de":"der Baum","es":"el árbol","formas":"","nem":"Suena a 'boom': el árbol que crece de golpe."},{"id":"w170","cat":"Sustantivo","sub":"Naturaleza","de":"das Tier","es":"el animal","formas":"","nem":"Suena a 'tierno': el animal tierno."},{"id":"w171","cat":"Sustantivo","sub":"Naturaleza","de":"der Himmel","es":"el cielo","formas":"","nem":"Suena a 'himno' que se eleva hacia el cielo."},{"id":"w172","cat":"Sustantivo","sub":"Naturaleza","de":"die Erde","es":"la tierra","formas":"","nem":"Suena a '(tú) eres de' la tierra."},{"id":"w173","cat":"Sustantivo","sub":"Naturaleza","de":"das Wetter","es":"el clima / tiempo","formas":"","nem":"Cognado directo de 'weather' en inglés."},{"id":"w174","cat":"Sustantivo","sub":"Sociedad","de":"die Regierung","es":"el gobierno","formas":"","nem":"De 'regieren' (gobernar) + '-ung'."},{"id":"w175","cat":"Sustantivo","sub":"Sociedad","de":"der Staat","es":"el estado (país)","formas":"","nem":"Cognado directo de 'state' en inglés."},{"id":"w176","cat":"Sustantivo","sub":"Sociedad","de":"die Gesellschaft","es":"la sociedad","formas":"","nem":"De 'Geselle' (compañero) + '-schaft': estar en compañía es hacer sociedad."},{"id":"w177","cat":"Sustantivo","sub":"Sociedad","de":"die Wirtschaft","es":"la economía","formas":"","nem":"Suena a 'verter riqueza': el flujo de la economía."},{"id":"w178","cat":"Sustantivo","sub":"Sociedad","de":"die Politik","es":"la política","formas":"","nem":"Casi idéntico al español."},{"id":"w179","cat":"Sustantivo","sub":"Sociedad","de":"das Recht","es":"el derecho","formas":"","nem":"Suena a 'recto' (correcto): lo justo."},{"id":"w180","cat":"Sustantivo","sub":"Sociedad","de":"das Gesetz","es":"la ley","formas":"","nem":"Suena a 'gestar' una ley con cuidado y tiempo."},{"id":"w181","cat":"Sustantivo","sub":"Sociedad","de":"der Krieg","es":"la guerra","formas":"","nem":"Suena a un 'crack' violento y repentino."},{"id":"w182","cat":"Sustantivo","sub":"Emociones","de":"die Liebe","es":"el amor","formas":"","nem":"Suena a 'libido': amor y deseo."},{"id":"w183","cat":"Sustantivo","sub":"Emociones","de":"die Angst","es":"el miedo","formas":"","nem":"Cognado casi directo del español 'angustia'."},{"id":"w184","cat":"Sustantivo","sub":"Emociones","de":"die Freude","es":"la alegría","formas":"","nem":"Suena a 'Freud' disfrutando: asociación libre y memorable."},{"id":"w185","cat":"Sustantivo","sub":"Emociones","de":"das Glück","es":"la suerte / felicidad","formas":"","nem":"Suena a un 'clic' de suerte: todo encajó de repente."},{"id":"w186","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"gut","es":"bueno","formas":"","nem":"Casi igual que 'good' en inglés, sin la d final."},{"id":"w187","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"schlecht","es":"malo","formas":"","nem":"Asocia el sonido áspero de 'schlecht' con algo que sale mal."},{"id":"w188","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"neu","es":"nuevo","formas":"","nem":"Cognado directo de 'new' en inglés."},{"id":"w189","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"alt","es":"viejo","formas":"","nem":"Suena a 'alto' en edad: llevas muchos años encima."},{"id":"w190","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"groß","es":"grande","formas":"","nem":"Suena a 'grueso': voluminoso y grande."},{"id":"w191","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"klein","es":"pequeño","formas":"","nem":"Suena a 'clan' pequeño y reducido de gente."},{"id":"w192","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"viel","es":"mucho","formas":"","nem":"Suena a 'fiel': mucho cariño fiel y constante."},{"id":"w193","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"wenig","es":"poco","formas":"","nem":"Suena a 'venir poco': algo escaso."},{"id":"w194","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"wichtig","es":"importante","formas":"","nem":"Asocia el sonido a algo que 'pesa' y por eso importa."},{"id":"w195","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"einfach","es":"fácil / simple","formas":"","nem":"Compuesto: 'ein' (uno) + 'fach' (categoría): una sola manera, simple."},{"id":"w196","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"schwierig","es":"difícil","formas":"","nem":"Suena a 'esquivar' algo difícil de lograr."},{"id":"w197","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"leicht","es":"fácil / ligero","formas":"","nem":"Cognado directo de 'light' en inglés: ligero, por tanto fácil."},{"id":"w198","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"richtig","es":"correcto","formas":"","nem":"Suena a 'recto': el camino correcto."},{"id":"w199","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"falsch","es":"falso","formas":"","nem":"Casi idéntico al español 'falso'."},{"id":"w200","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"möglich","es":"posible","formas":"","nem":"De 'mögen' (poder/gustar) + '-lich': lo que se puede lograr."},{"id":"w201","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"sicher","es":"seguro","formas":"","nem":"Suena a estar 'psíquicamente' seguro de algo."},{"id":"w202","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"frei","es":"libre","formas":"","nem":"Cognado directo de 'free' en inglés."},{"id":"w203","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"ganz","es":"entero / todo","formas":"","nem":"Suena a 'ganso' entero, sin partir."},{"id":"w204","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"ander-","es":"otro","formas":"","nem":"Suena a 'andar' hacia otro lado distinto."},{"id":"w205","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"gleich","es":"igual","formas":"","nem":"Suena a 'glacial': todo uniforme y frío por igual."},{"id":"w206","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"jung","es":"joven","formas":"","nem":"Cognado directo de 'young' en inglés."},{"id":"w207","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"spät","es":"tarde","formas":"","nem":"Suena a 'espabilarte' tarde, cuando ya es tarde."},{"id":"w208","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"früh","es":"temprano","formas":"","nem":"Suena a 'fruta' fresca recogida temprano por la mañana."},{"id":"w209","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"lang","es":"largo","formas":"","nem":"Cognado directo de 'long' en inglés."},{"id":"w210","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"kurz","es":"corto","formas":"","nem":"Suena a 'curso' corto y breve."},{"id":"w211","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"hoch","es":"alto","formas":"","nem":"Suena a 'hoy toco el cielo' de lo alto que es."},{"id":"w212","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"tief","es":"profundo","formas":"","nem":"Suena a 'tibio' en lo profundo del mar."},{"id":"w213","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"stark","es":"fuerte","formas":"","nem":"Suena a estar 'marcado' con fuerza."},{"id":"w214","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"schwach","es":"débil","formas":"","nem":"El sonido blando de 'schwach' evoca algo sin fuerza."},{"id":"w215","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"schön","es":"bonito","formas":"","nem":"Suena a 'chic' y elegante: bonito."},{"id":"w216","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"klar","es":"claro","formas":"","nem":"Casi idéntico al español 'claro'."},{"id":"w217","cat":"Adjetivo/Adverbio","sub":"Adjetivo","de":"offen","es":"abierto","formas":"","nem":"Suena a 'ofrecen' algo con las puertas abiertas."},{"id":"w218","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"sehr","es":"muy","formas":"","nem":"Suena a 'ser muy' algo: intensifica cualquier cualidad."},{"id":"w219","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"auch","es":"también","formas":"","nem":"Suena a un suspiro: '¡auch, a mí también me pasó!'."},{"id":"w220","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"nur","es":"solo / solamente","formas":"","nem":"Suena a 'puro', nada más que eso, solamente."},{"id":"w221","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"noch","es":"todavía / aún","formas":"","nem":"Suena a 'noche': todavía no ha llegado el momento."},{"id":"w222","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"schon","es":"ya","formas":"","nem":"Suena a algo 'chocante' que ya sucedió."},{"id":"w223","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"so","es":"así / tan","formas":"","nem":"Idéntico al 'so' inglés de 'so what', tan así de simple."},{"id":"w224","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"dann","es":"entonces","formas":"","nem":"Suena a 'dan' el siguiente paso: entonces continúa."},{"id":"w225","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"hier","es":"aquí","formas":"","nem":"Cognado directo de 'here' en inglés."},{"id":"w226","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"da","es":"ahí / allí","formas":"","nem":"Casi idéntico al español 'da' de 'ahí está'."},{"id":"w227","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"jetzt","es":"ahora","formas":"","nem":"Suena a un chorro de energía inmediata: ahora mismo."},{"id":"w228","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"immer","es":"siempre","formas":"","nem":"Suena a estar 'inmerso siempre' en algo."},{"id":"w229","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"wieder","es":"de nuevo","formas":"","nem":"Suena a 'vídeo' que repites de nuevo desde el inicio."},{"id":"w230","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"mehr","es":"más","formas":"","nem":"Suena a 'mar': siempre pide más agua, más cantidad."},{"id":"w231","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"doch","es":"sin embargo / que sí","formas":"","nem":"Suena a contradecir con energía: '¡doch, que sí es así!'."},{"id":"w232","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"vielleicht","es":"quizás","formas":"","nem":"Compuesto: 'viel' (mucho) + 'leicht' (ligero): una posibilidad ligera."},{"id":"w233","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"natürlich","es":"naturalmente","formas":"","nem":"Casi idéntico al español 'natural' + '-lich'."},{"id":"w234","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"wirklich","es":"realmente","formas":"","nem":"De 'Wirklichkeit' (realidad): de verdad, en la realidad."},{"id":"w235","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"genau","es":"exacto / exactamente","formas":"","nem":"Suena a 'genuino': exacto y auténtico."},{"id":"w236","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"eigentlich","es":"en realidad","formas":"","nem":"De 'eigen' (propio): lo que es propio de esto, en el fondo."},{"id":"w237","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"gerade","es":"justo / precisamente","formas":"","nem":"Suena a 'recto/derecho': justo en línea recta, en este momento."},{"id":"w238","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"oft","es":"a menudo","formas":"","nem":"Cognado directo de 'often' en inglés."},{"id":"w239","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"manchmal","es":"a veces","formas":"","nem":"Compuesto: 'manch' (algún) + 'mal' (vez): alguna vez."},{"id":"w240","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"nie","es":"nunca","formas":"","nem":"Corto y cortante: '¡nie, nunca jamás!'."},{"id":"w241","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"überall","es":"por todas partes","formas":"","nem":"Compuesto: 'über' (sobre) + 'all' (todo): en todo lugar."},{"id":"w242","cat":"Adjetivo/Adverbio","sub":"Adverbio","de":"zusammen","es":"juntos","formas":"","nem":"Suena a 'asumen' la tarea juntos, en equipo."},{"id":"w243","cat":"Partícula modal","sub":"Partícula","de":"ja","es":"(refuerza una afirmación)","formas":"","nem":"Ejemplo: 'Das ist ja klar' (eso es obviamente claro). Suaviza y refuerza a la vez."},{"id":"w244","cat":"Partícula modal","sub":"Partícula","de":"doch (partícula)","es":"(contradice suavemente / anima)","formas":"","nem":"Ojo: mismo alemán que el adverbio 'doch' (sin embargo), pero aquí sin traducción propia — solo da calidez o contradice. Ejemplo: 'Komm doch!' (¡venga, ven!)."},{"id":"w245","cat":"Partícula modal","sub":"Partícula","de":"mal","es":"(suaviza una orden, 'un momento')","formas":"","nem":"Ejemplo: 'Komm mal her' (ven un momento). Quita formalidad a la petición."},{"id":"w246","cat":"Partícula modal","sub":"Partícula","de":"denn","es":"(suaviza una pregunta, 'pues')","formas":"","nem":"Ejemplo: 'Warum denn?' (¿por qué pues?). Añade curiosidad genuina."},{"id":"w247","cat":"Partícula modal","sub":"Partícula","de":"eben","es":"(resignación, 'precisamente')","formas":"","nem":"Ejemplo: 'Das ist eben so' (así son las cosas, ni modo)."},{"id":"w248","cat":"Partícula modal","sub":"Partícula","de":"halt","es":"(resignación, más del sur de Alemania)","formas":"","nem":"Ejemplo: 'Das ist halt so' (pues así es, qué se le va a hacer)."},{"id":"w249","cat":"Partícula modal","sub":"Partícula","de":"schon (partícula)","es":"(tranquiliza, 'ya verás')","formas":"","nem":"Ojo: mismo alemán que el adverbio 'schon' (ya), pero aquí sin traducción propia — solo tranquiliza. Ejemplo: 'Das wird schon klappen' (ya verás que sale bien)."},{"id":"w250","cat":"Partícula modal","sub":"Partícula","de":"wohl","es":"(probabilidad, 'supongo')","formas":"","nem":"Ejemplo: 'Er ist wohl zu Hause' (probablemente está en casa)."},{"id":"w251","cat":"Partícula modal","sub":"Partícula","de":"einfach (partícula)","es":"(simplemente)","formas":"","nem":"Ojo: mismo alemán que el adjetivo 'einfach' (fácil), pero aquí sin traducción propia — solo simplifica el tono. Ejemplo: 'Mach einfach!' (¡simplemente hazlo!)."},{"id":"w252","cat":"Partícula modal","sub":"Partícula","de":"nun","es":"(transición, 'bueno pues')","formas":"","nem":"Ejemplo: 'Nun gut' (bueno, está bien, entonces)."}];
+
+const CAT_ACCENT = {
+  "Gramática":"#3E5C50",
+  "Verbo":"#5C4A2E",
+  "Sustantivo":"#7A4E1F",
+  "Adjetivo/Adverbio":"#7A4433",
+  "Partícula modal":"#4A3D63"
+};
+
+const DAY = 24*60*60*1000;
+const LEVEL_LABELS = ['Nuevas','Cajón 1','Cajón 2','Cajón 3','Cajón 4','Cajón 5','Cajón 6','Dominadas'];
+
+let srsState = {};
+let stats = {};
+let settings = {};
+let cardIndex = {};
+CARDS.forEach(c => cardIndex[c.id] = c);
+
+let sessionQueue = [];
+let newIntroducedThisSession = 0;
+let currentMode = 'estudio';
+let currentCardId = null;
+let currentReverse = false;
+let revealed = false;
+let quizLocked = false;
+let matchState = null;
+let sessionStart = Date.now();
+let lastBreakPromptAt = Date.now();
+const BREAK_INTERVAL_MS = 45*60*1000;
+
+/* ---------------- Persistencia ---------------- */
+async function safeGet(key, fallback){
+  try{
+    const v = localStorage.getItem(key);
+    if (typeof v === 'string') return JSON.parse(v);
+    return fallback;
+  }catch(e){ return fallback; }
+}
+async function safeSet(key, obj){
+  try{ localStorage.setItem(key, JSON.stringify(obj)); }catch(e){ /* best effort */ }
+}
+
+let saveTimer = null;
+function saveDebounced(){
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(flushSave, 2000);
+}
+async function flushSave(){
+  await safeSet('srs_state', srsState);
+  await safeSet('app_stats', stats);
+  await safeSet('app_settings', settings);
+}
+window.addEventListener('beforeunload', flushSave);
+document.addEventListener('visibilitychange', () => { if (document.hidden) flushSave(); });
+setInterval(flushSave, 30000);
+
+function defaultCardState(){ return {level:0, dueAt:null, reps:0, correct:0, lapses:0, lastSeen:null}; }
+function defaultStats(){ return {totalReviews:0, todayReviews:0, todayDateISO:'', streakDays:0, lastStudyDateISO:'', bestMatchMoves:null}; }
+function defaultSettings(){ return {newCardsPerSession:20}; }
+
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+
+function touchDailyStats(){
+  const today = todayISO();
+  if (stats.todayDateISO !== today){
+    const yesterday = new Date(Date.now()-DAY).toISOString().slice(0,10);
+    if (stats.todayDateISO === yesterday){
+      stats.streakDays = (stats.streakDays||0)+1;
+    } else if (stats.todayDateISO === ''){
+      stats.streakDays = 1;
+    } else {
+      stats.streakDays = 1;
+    }
+    stats.todayDateISO = today;
+    stats.todayReviews = 0;
+  }
+}
+
+/* ---------------- Utilidades ---------------- */
+function shuffle(arr){
+  const a = arr.slice();
+  for (let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+/* ---------------- Motor SRS ---------------- */
+function buildInitialQueue(){
+  const now = Date.now();
+  let due = CARDS.filter(c => srsState[c.id].level>=3 && srsState[c.id].dueAt!==null && srsState[c.id].dueAt<=now);
+  due = shuffle(due);
+  sessionQueue = due.map(c=>c.id);
+  maybeAddNewCards(6);
+}
+
+function maybeAddNewCards(count){
+  if (newIntroducedThisSession >= settings.newCardsPerSession) return;
+  let pool = CARDS.filter(c => srsState[c.id].level===0 && sessionQueue.indexOf(c.id)===-1 && c.id!==currentCardId);
+  pool = shuffle(pool);
+  for (let i=0;i<count && pool.length>0 && newIntroducedThisSession<settings.newCardsPerSession;i++){
+    const c = pool.pop();
+    const insertPos = Math.min(sessionQueue.length, Math.floor(Math.random()*3));
+    sessionQueue.splice(insertPos,0,c.id);
+    newIntroducedThisSession++;
+  }
+}
+
+function scheduleWithinSession(id, positionsAhead){
+  const idx = sessionQueue.indexOf(id);
+  if (idx!==-1) sessionQueue.splice(idx,1);
+  const insertPos = Math.min(sessionQueue.length, positionsAhead);
+  sessionQueue.splice(insertPos,0,id);
+}
+
+function getNextCard(){
+  if (sessionQueue.length===0) maybeAddNewCards(6);
+  if (sessionQueue.length===0){
+    const now = Date.now();
+    let due = CARDS.filter(c => srsState[c.id].level>=3 && srsState[c.id].dueAt!==null && srsState[c.id].dueAt<=now);
+    if (due.length>0) sessionQueue = shuffle(due).map(c=>c.id);
+  }
+  if (sessionQueue.length===0) return null;
+  return sessionQueue.shift();
+}
+
+function reviewCard(id, outcome){
+  const state = srsState[id];
+  const now = Date.now();
+  state.reps++;
+  if (outcome==='good') state.correct++;
+  if (outcome==='again' && state.level>=3) state.lapses++;
+
+  switch(state.level){
+    case 0:
+      if (outcome==='again'){ state.level=1; scheduleWithinSession(id,3); }
+      else if (outcome==='hard'){ state.level=1; scheduleWithinSession(id,6); }
+      else { state.level=2; scheduleWithinSession(id,15); }
+      break;
+    case 1:
+      if (outcome==='again'){ scheduleWithinSession(id,3); }
+      else if (outcome==='hard'){ scheduleWithinSession(id,8); }
+      else { state.level=2; scheduleWithinSession(id,15); }
+      break;
+    case 2:
+      if (outcome==='again'){ state.level=1; scheduleWithinSession(id,3); }
+      else if (outcome==='hard'){ scheduleWithinSession(id,15); }
+      else { state.level=3; state.dueAt=now+DAY; }
+      break;
+    case 3:
+      if (outcome==='again'){ state.level=1; scheduleWithinSession(id,3); }
+      else if (outcome==='hard'){ state.dueAt=now+DAY; }
+      else { state.level=4; state.dueAt=now+3*DAY; }
+      break;
+    case 4:
+      if (outcome==='again'){ state.level=1; scheduleWithinSession(id,3); }
+      else if (outcome==='hard'){ state.dueAt=now+3*DAY; }
+      else { state.level=5; state.dueAt=now+7*DAY; }
+      break;
+    case 5:
+      if (outcome==='again'){ state.level=1; scheduleWithinSession(id,3); }
+      else if (outcome==='hard'){ state.dueAt=now+7*DAY; }
+      else { state.level=6; state.dueAt=now+16*DAY; }
+      break;
+    case 6:
+      if (outcome==='again'){ state.level=1; scheduleWithinSession(id,3); }
+      else if (outcome==='hard'){ state.dueAt=now+16*DAY; }
+      else { state.level=7; state.dueAt=now+35*DAY; }
+      break;
+    case 7:
+      if (outcome==='again'){ state.level=1; scheduleWithinSession(id,3); }
+      else if (outcome==='hard'){ state.dueAt=now+20*DAY; }
+      else { state.dueAt=now+35*DAY; }
+      break;
+  }
+  state.lastSeen = now;
+  stats.totalReviews++;
+  stats.todayReviews++;
+  saveDebounced();
+  renderBoxes(true);
+  renderStats();
+}
+
+function getDistractors(card, n){
+  let pool = shuffle(CARDS.filter(c => c.id!==card.id && c.sub===card.sub));
+  if (pool.length<n){
+    const have = new Set(pool.map(c=>c.id));
+    const more = shuffle(CARDS.filter(c => c.id!==card.id && c.cat===card.cat && !have.has(c.id)));
+    pool = pool.concat(more);
+  }
+  if (pool.length<n){
+    const have = new Set(pool.map(c=>c.id));
+    const more = shuffle(CARDS.filter(c => c.id!==card.id && !have.has(c.id)));
+    pool = pool.concat(more);
+  }
+  return pool.slice(0,n);
+}
+
+/* ---------------- Render: header stats & boxes ---------------- */
+function renderStats(){
+  const mins = Math.round((Date.now()-sessionStart)/60000);
+  document.getElementById('statsBar').innerHTML =
+    '<div class="stat"><strong>'+(stats.streakDays||0)+'</strong>racha (días)</div>'+
+    '<div class="stat"><strong>'+(stats.todayReviews||0)+'</strong>hoy</div>'+
+    '<div class="stat"><strong>'+mins+'m</strong>sesión</div>';
+}
+
+function renderBoxes(pulseLast){
+  const counts = new Array(8).fill(0);
+  CARDS.forEach(c => counts[srsState[c.id].level]++);
+  const strip = document.getElementById('boxesStrip');
+  strip.innerHTML = LEVEL_LABELS.map((l,i)=>
+    '<div class="box" title="'+l+'"><span class="box-count">'+counts[i]+'</span><span class="box-label">'+l+'</span></div>'
+  ).join('');
+}
+
+/* ---------------- Modo Estudio ---------------- */
+function renderEstudioNext(){
+  const id = getNextCard();
+  revealed = false;
+  if (!id){ renderNoDue(); return; }
+  currentCardId = id;
+  currentReverse = Math.random() < 0.5;
+  renderEstudioCard();
+}
+
+function renderNoDue(){
+  const remainingNew = CARDS.filter(c=>srsState[c.id].level===0).length;
+  const stage = document.getElementById('stage');
+  stage.innerHTML =
+    '<div class="no-due"><h3>Vas al día</h3>'+
+    '<p>No hay palabras pendientes de repaso ahora mismo'+
+    (settings.newCardsPerSession>0 && remainingNew>0 ? ' y ya viste tus palabras nuevas de hoy.' : '.')+
+    '</p>'+
+    (remainingNew>0
+      ? '<button class="primary-btn" id="addMoreBtn">Añadir 15 palabras nuevas</button>'
+      : '<p>Has visto las 253 palabras al menos una vez. ¡Ahora toca mantenimiento!</p>')+
+    '<button class="primary-btn" id="goMatchBtn">Ir a Parejas</button>'+
+    '</div>';
+  const addBtn = document.getElementById('addMoreBtn');
+  if (addBtn) addBtn.addEventListener('click', ()=>{
+    settings.newCardsPerSession += 15;
+    saveDebounced();
+    renderEstudioNext();
+  });
+  document.getElementById('goMatchBtn').addEventListener('click', ()=> switchMode('match'));
+}
+
+function renderEstudioCard(){
+  const c = cardIndex[currentCardId];
+  const accent = CAT_ACCENT[c.cat] || '#5C5140';
+  const front = currentReverse ? c.es : c.de;
+  const stage = document.getElementById('stage');
+  stage.innerHTML =
+    '<div class="card-scene">'+
+      '<div class="index-card" id="indexCard">'+
+        '<div class="card-face card-front" id="cardFront">'+
+          '<span class="card-dir">'+(currentReverse ? 'ES → DE' : 'DE → ES')+'</span>'+
+          '<span class="card-cat" style="--accent:'+accent+'">'+c.cat+' · '+c.sub+'</span>'+
+          '<h2 class="card-word">'+escapeHtml(front)+'</h2>'+
+          '<p class="card-hint">Piensa la respuesta, luego muéstrala <kbd>Espacio</kbd></p>'+
+        '</div>'+
+        '<div class="card-face card-back" id="cardBack" hidden>'+
+          '<span class="card-cat" style="--accent:'+accent+'">'+c.cat+' · '+c.sub+'</span>'+
+          '<h3 class="card-es">'+escapeHtml(currentReverse ? c.de : c.es)+'</h3>'+
+          (c.formas ? '<p class="card-formas">'+escapeHtml(c.formas)+'</p>' : '')+
+          '<p class="card-nem">'+escapeHtml(c.nem)+'</p>'+
+        '</div>'+
+      '</div>'+
+      '<button class="reveal-btn" id="revealBtn">Mostrar respuesta <kbd>Espacio</kbd></button>'+
+      '<div class="rate-row" id="rateRow" hidden>'+
+        '<button class="rate rate-again" data-outcome="again">No lo sabía <kbd>1</kbd></button>'+
+        '<button class="rate rate-hard" data-outcome="hard">Me costó <kbd>2</kbd></button>'+
+        '<button class="rate rate-good" data-outcome="good">Lo sabía <kbd>3</kbd></button>'+
+      '</div>'+
+    '</div>';
+
+  document.getElementById('revealBtn').addEventListener('click', doReveal);
+  document.querySelectorAll('#rateRow .rate').forEach(btn=>{
+    btn.addEventListener('click', ()=> rateCurrent(btn.dataset.outcome));
+  });
+}
+
+function doReveal(){
+  if (revealed) return;
+  revealed = true;
+  const front = document.getElementById('cardFront');
+  const back = document.getElementById('cardBack');
+  const revealBtn = document.getElementById('revealBtn');
+  const rateRow = document.getElementById('rateRow');
+  front.classList.add('hiding');
+  revealBtn.hidden = true;
+  setTimeout(()=>{
+    front.hidden = true;
+    back.hidden = false;
+    rateRow.hidden = false;
+    requestAnimationFrame(()=> back.classList.add('showing'));
+  }, 160);
+}
+
+function rateCurrent(outcome){
+  if (!revealed || !currentCardId) return;
+  reviewCard(currentCardId, outcome);
+  renderEstudioNext();
+}
+
+/* ---------------- Modo Elección rápida ---------------- */
+function renderQuizNext(){
+  const id = getNextCard();
+  if (!id){ renderNoDue(); return; }
+  currentCardId = id;
+  quizLocked = false;
+  const c = cardIndex[id];
+  const distractors = getDistractors(c, 3);
+  const options = shuffle([c].concat(distractors));
+  const stage = document.getElementById('stage');
+  stage.innerHTML =
+    '<div class="quiz-scene">'+
+      '<div class="quiz-word"><span class="card-cat" style="--accent:'+(CAT_ACCENT[c.cat]||'#5C5140')+'">'+c.cat+'</span><h2>'+escapeHtml(c.de)+'</h2></div>'+
+      '<div class="quiz-options" id="quizOptions">'+
+        options.map((o,i)=>'<button class="opt" data-id="'+o.id+'" data-key="'+(i+1)+'">'+escapeHtml(o.es)+' <kbd>'+(i+1)+'</kbd></button>').join('')+
+      '</div>'+
+      '<p class="quiz-feedback" id="quizFeedback"></p>'+
+    '</div>';
+  document.querySelectorAll('#quizOptions .opt').forEach(btn=>{
+    btn.addEventListener('click', ()=> answerQuiz(btn.dataset.id));
+  });
+}
+
+function answerQuiz(chosenId){
+  if (quizLocked) return;
+  quizLocked = true;
+  const c = cardIndex[currentCardId];
+  const correct = chosenId === c.id;
+  document.querySelectorAll('#quizOptions .opt').forEach(btn=>{
+    btn.disabled = true;
+    if (btn.dataset.id === c.id) btn.classList.add('correct');
+    else if (btn.dataset.id === chosenId) btn.classList.add('incorrect');
+  });
+  document.getElementById('quizFeedback').textContent = c.nem;
+  reviewCard(currentCardId, correct ? 'good' : 'again');
+  setTimeout(renderQuizNext, correct ? 900 : 1700);
+}
+
+/* ---------------- Modo Parejas ---------------- */
+function startMatchRound(){
+  let pool = CARDS.filter(c => srsState[c.id].reps>0);
+  if (pool.length<8) pool = CARDS.slice();
+  const chosen = shuffle(pool).slice(0,8);
+  let tiles = [];
+  chosen.forEach(c=>{
+    tiles.push({uid:c.id+'_de', pairId:c.id, text:c.de});
+    tiles.push({uid:c.id+'_es', pairId:c.id, text:c.es});
+  });
+  tiles = shuffle(tiles);
+  matchState = {tiles, flipped:[], matched:new Set(), moves:0, lock:false};
+  renderMatch();
+}
+
+function renderMatch(){
+  const stage = document.getElementById('stage');
+  stage.innerHTML =
+    '<div class="match-scene">'+
+      '<div class="match-meta"><span>Movimientos: <span id="matchMoves">'+matchState.moves+'</span></span>'+
+      '<span>Mejor: '+(stats.bestMatchMoves!==null && stats.bestMatchMoves!==undefined ? stats.bestMatchMoves : '–')+'</span></div>'+
+      '<div class="match-grid" id="matchGrid">'+
+        matchState.tiles.map(t=>{
+          const flipped = matchState.flipped.indexOf(t.uid)!==-1;
+          const matched = matchState.matched.has(t.uid);
+          const cls = matched ? 'tile matched' : (flipped ? 'tile flipped' : 'tile');
+          return '<button class="'+cls+'" data-uid="'+t.uid+'">'+(flipped||matched ? escapeHtml(t.text) : '?')+'</button>';
+        }).join('')+
+      '</div>'+
+      '<p class="match-note">Modo libre — no mueve tus palabras de cajón.</p>'+
+    '</div>';
+  document.querySelectorAll('#matchGrid .tile').forEach(btn=>{
+    btn.addEventListener('click', ()=> flipTile(btn.dataset.uid));
+  });
+}
+
+function flipTile(uid){
+  if (matchState.lock) return;
+  if (matchState.matched.has(uid)) return;
+  if (matchState.flipped.indexOf(uid)!==-1) return;
+  if (matchState.flipped.length>=2) return;
+  matchState.flipped.push(uid);
+  renderMatch();
+  if (matchState.flipped.length===2){
+    matchState.lock = true;
+    matchState.moves++;
+    const [a,b] = matchState.flipped;
+    const ta = matchState.tiles.find(t=>t.uid===a);
+    const tb = matchState.tiles.find(t=>t.uid===b);
+    const isMatch = ta.pairId===tb.pairId;
+    setTimeout(()=>{
+      if (isMatch){
+        matchState.matched.add(a);
+        matchState.matched.add(b);
+      }
+      matchState.flipped = [];
+      matchState.lock = false;
+      renderMatch();
+      if (matchState.matched.size===matchState.tiles.length){
+        if (stats.bestMatchMoves===null || stats.bestMatchMoves===undefined || matchState.moves<stats.bestMatchMoves){
+          stats.bestMatchMoves = matchState.moves;
+          saveDebounced();
+        }
+        setTimeout(startMatchRound, 1100);
+      }
+    }, isMatch ? 450 : 850);
+  }
+}
+
+/* ---------------- Modo switch ---------------- */
+function switchMode(mode){
+  currentMode = mode;
+  document.querySelectorAll('.tab').forEach(t=> t.classList.toggle('active', t.dataset.mode===mode));
+  if (mode==='estudio') renderEstudioNext();
+  else if (mode==='quick') renderQuizNext();
+  else if (mode==='match') startMatchRound();
+}
+
+/* ---------------- Utilidades UI ---------------- */
+function escapeHtml(s){
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ---------------- Break banner ---------------- */
+function checkBreak(){
+  if (Date.now()-lastBreakPromptAt > BREAK_INTERVAL_MS){
+    document.getElementById('breakBanner').hidden = false;
+  }
+}
+document.getElementById('dismissBreak').addEventListener('click', ()=>{
+  lastBreakPromptAt = Date.now();
+  document.getElementById('breakBanner').hidden = true;
+});
+setInterval(checkBreak, 60000);
+
+/* ---------------- Eventos globales ---------------- */
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click', ()=> switchMode(tab.dataset.mode));
+});
+document.getElementById('howItWorksBtn').addEventListener('click', ()=>{
+  document.getElementById('howItWorksModal').hidden = false;
+});
+document.getElementById('closeModal').addEventListener('click', ()=>{
+  document.getElementById('howItWorksModal').hidden = true;
+});
+
+document.addEventListener('keydown', (e)=>{
+  if (!document.getElementById('howItWorksModal').hidden){
+    if (e.key==='Escape') document.getElementById('howItWorksModal').hidden = true;
+    return;
+  }
+  if (currentMode==='estudio'){
+    if (e.code==='Space'){ e.preventDefault(); if(!revealed) doReveal(); }
+    else if (revealed && (e.key==='1'||e.key==='2'||e.key==='3')){
+      const map = {'1':'again','2':'hard','3':'good'};
+      rateCurrent(map[e.key]);
+    }
+  } else if (currentMode==='quick'){
+    if (['1','2','3','4'].indexOf(e.key)!==-1 && !quizLocked){
+      const btn = document.querySelector('#quizOptions .opt[data-key="'+e.key+'"]');
+      if (btn) answerQuiz(btn.dataset.id);
+    }
+  }
+});
+
+setInterval(renderStats, 20000);
+
+/* ---------------- Arranque ---------------- */
+async function init(){
+  const loadedSrs = await safeGet('srs_state', null);
+  srsState = loadedSrs || {};
+  CARDS.forEach(c => { if (!srsState[c.id]) srsState[c.id] = defaultCardState(); });
+
+  stats = await safeGet('app_stats', null) || defaultStats();
+  settings = await safeGet('app_settings', null) || defaultSettings();
+
+  touchDailyStats();
+  renderStats();
+  renderBoxes();
+  buildInitialQueue();
+  switchMode('estudio');
+  saveDebounced();
+}
+init();
+</script>
+<script>
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
+</script>
+</body>
+</html>
